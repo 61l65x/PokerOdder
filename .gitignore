@@ -31,3 +31,4 @@
 # Editors
 *.swp
 .vscode
+**.cache

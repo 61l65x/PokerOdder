@@ -40,7 +40,8 @@ const std::unordered_map<int, char> suitMap = {
     {3, 'S'},
 };
 
-int main(int argc, char **argv) {
+int hand_strength_sim(int argc, char **argv)
+{
   for (auto i = 0; i < 52; ++i) {
     in.emplace_back(i);
   }
@@ -254,4 +255,5 @@ int main(int argc, char **argv) {
     }
     std::cout << "\n";
   }
+  return 0;
 }
