@@ -4,7 +4,7 @@ BUILD_DIR = build
 
 CXX = c++
 FLAGS = -std=c++11 -O3
-HEADERS = -I$(PHEVAL_DIR)/include -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
+HEADERS = -I$(PHEVAL_DIR)/include -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I./srcs/PokerOdder
 LIBS = -L$(PHEVAL_DIR) -lpheval `pkg-config --cflags --libs glfw3` -lGL -ldl -lX11 -lpthread
 
 NAME = texu-helper
@@ -46,7 +46,7 @@ install_deps:
 pheval_build: install_deps
 	$(MAKE) -C $(PHEVAL_DIR)
 
-clean:
+fclean:
 	rm -f $(NAME)
 	rm -rf $(BUILD_DIR)
 
