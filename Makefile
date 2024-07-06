@@ -7,9 +7,8 @@ HEADERS = -I$(PHEVAL_DIR)/include -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
 LIBS = -L$(PHEVAL_DIR) -lpheval `pkg-config --cflags --libs glfw3` -lGL -ldl -lX11 -lpthread
 
 NAME = texu-helper
-BETTER_SIM_NAME = better_sim
 
-SOURCES = srcs/main.cpp srcs/sim.cpp
+SOURCES = $(shell find srcs -name "*.cpp")
 IMGUI_SOURCES = $(IMGUI_DIR)/imgui.cpp \
                 $(IMGUI_DIR)/imgui_draw.cpp \
                 $(IMGUI_DIR)/imgui_widgets.cpp \
@@ -35,7 +34,6 @@ pheval_build: install_deps
 
 clean:
 	rm -f $(NAME)
-	rm -f $(BETTER_SIM_NAME)
 
 deepclean: clean
 	$(MAKE) -C $(PHEVAL_DIR) clean

@@ -32,3 +32,5 @@
 *.swp
 .vscode
 **.cache
+**compile_commands.json
+**imgui.ini
