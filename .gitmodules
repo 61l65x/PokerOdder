@@ -1,3 +1,6 @@
 [submodule "PokerHandEvaluator"]
 	path = dependencies/PokerHandEvaluator
 	url = https://github.com/HenryRLee/PokerHandEvaluator.git
+[submodule "imgui"]
+	path = dependencies/imgui
+	url = https://github.com/ocornut/imgui.git
