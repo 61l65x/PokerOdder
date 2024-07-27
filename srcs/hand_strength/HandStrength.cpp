@@ -12,6 +12,7 @@ e.g.
   plays out 6 handed, just the flop, highlights the top 10% of hands, only runs 1000 simulations per hand (1M is better, but takes longer)
 
 */
+#include "HandStrength.hpp"
 #include <cassert>
 #include <algorithm>
 #include <iomanip>
@@ -25,26 +26,21 @@ e.g.
 #include <tuple>
 
 using namespace phevaluator;
-static std::vector<int> in;
-
 #define ITERS 10000
 
-const std::unordered_map<int, char> rankMap = {
-    {0, '2'}, {1, '3'}, {2, '4'}, {3, '5'},  {4, '6'},  {5, '7'},  {6, '8'},
-    {7, '9'}, {8, 'T'}, {9, 'J'}, {10, 'Q'}, {11, 'K'}, {12, 'A'},
-};
-const std::unordered_map<int, char> suitMap = {
-    {0, 'C'},
-    {1, 'D'},
-    {2, 'H'},
-    {3, 'S'},
-};
-
-int hand_strength_sim(int argc, char **argv)
+std::vector<std::string> HandStrength::hand_strength_sim(int argc, char **argv)
 {
-  for (auto i = 0; i < 52; ++i) {
-    in.emplace_back(i);
-  }
+    const std::unordered_map<int, char> rankMap = {
+      {0, '2'}, {1, '3'}, {2, '4'}, {3, '5'},  {4, '6'},  {5, '7'},  {6, '8'},
+      {7, '9'}, {8, 'T'}, {9, 'J'}, {10, 'Q'}, {11, 'K'}, {12, 'A'},
+  };
+  const std::unordered_map<int, char> suitMap = {
+      {0, 'C'},
+      {1, 'D'},
+      {2, 'H'},
+      {3, 'S'},
+  };
+
   std::random_device rd;  // obtain a random number from hardware
   std::mt19937 gen(rd()); // seed the generator
   std::uniform_int_distribution<> distr(0, 51); // define the range
@@ -183,77 +179,89 @@ int hand_strength_sim(int argc, char **argv)
     return ss.str();
   };
 
-  std::cout << std::fixed;
-  std::cout << std::setprecision(0);
+
+  std::vector<std::string> output;
+  // Collect header information
+  std::stringstream header;
+  header << std::fixed << std::setprecision(0)
+        << "% winning for " << num_players + 1 << " players after " << cards_on_board << " cards dealt (" << iters << " simulations per hand)";
+  if (top_pct < 100) {
+      header << ", highlighting top " << top_pct << "% of hands";
+  }
+  output.push_back(header.str());
+
+  // Simulation progress indicator
+  output.push_back("Simulation in progress...");
+
+  // Generate hand strength data
   std::unordered_map<int, float> winning_pct;
   for (auto c0 = 12; c0 >= 0; --c0) {
-    for (auto c1 = 12; c1 >= 0; --c1) {
-      auto s0 = 0;
-      auto s1 = 1;
-      if (c0 > c1) {
-        s1 = 0;
+      for (auto c1 = 12; c1 >= 0; --c1) {
+          int s0 = 0, s1 = 1;
+          if (c0 > c1) {
+              s1 = 0;
+          }
+          int h0 = c0 * 4 + s0;
+          int h1 = c1 * 4 + s1;
+          float pct = get_pct(h0, h1, num_players);
+          int idx = h0 * 52 + h1;
+          winning_pct[idx] = pct;
       }
-      auto h0 = c0 * 4 + s0;
-      auto h1 = c1 * 4 + s1;
-      auto pct = get_pct(h0, h1, num_players);
-      auto idx = h0 * 52 + h1;
-      winning_pct[idx] = pct;
-    }
-    std::cout << "." << std::flush;
+      output.back() += ".";
   }
-  std::cout << "\n";
 
+  // Calculate mean and standard deviation
   float total = 0;
-  for (auto &p : winning_pct) {
-    total += p.second;
+  for (const auto& p : winning_pct) {
+      total += p.second;
   }
   float mean = total / winning_pct.size();
   float sq_total = 0;
-  for (auto &p : winning_pct) {
-    auto o = (p.second - mean);
-    sq_total += o * o;
+  for (const auto& p : winning_pct) {
+      float o = (p.second - mean);
+      sq_total += o * o;
   }
   float std = std::sqrt(sq_total / winning_pct.size());
 
   auto inTop = [&](float pct) {
-    auto num_above = 0;
-    for (auto &p : winning_pct) {
-      if (p.second > pct) {
-        num_above++;
+      int num_above = 0;
+      for (const auto& p : winning_pct) {
+          if (p.second > pct) {
+              num_above++;
+          }
       }
-    }
-    return ((float)num_above / (13 * 13) * 100) < top_pct;
+      return (static_cast<float>(num_above) / (13 * 13) * 100) < top_pct;
   };
 
   for (auto c0 = 12; c0 >= 0; --c0) {
-    for (auto c1 = 12; c1 >= 0; --c1) {
-      auto s0 = 0;
-      auto s1 = 1;
-      if (c0 > c1) {
-        s1 = 0;
-      }
-      auto h0 = c0 * 4 + s0;
-      auto h1 = c1 * 4 + s1;
-      auto idx = h0 * 52 + h1;
-      auto pct = winning_pct.at(idx);
+      std::stringstream row;
+      for (auto c1 = 12; c1 >= 0; --c1) {
+          int s0 = 0, s1 = 1;
+          if (c0 > c1) {
+              s1 = 0;
+          }
+          int h0 = c0 * 4 + s0;
+          int h1 = c1 * 4 + s1;
+          int idx = h0 * 52 + h1;
+          float pct = winning_pct.at(idx);
 
-      if (!inTop(pct)) {
-        std::cout << "\033[38;2;50;50;50m";
-      }
-      if (c0 > c1) {
-        std::cout << rankMap.at(c0) << rankMap.at(c1) << "s ";
-      } else if (c1 > c0) {
-        std::cout << rankMap.at(c0) << rankMap.at(c1) << "o ";
-      } else {
-        std::cout << rankMap.at(c0) << rankMap.at(c1) << "  ";
-      }
-      std::cout << "\033[0m";
+          if (!inTop(pct)) {
+              row << "\033[38;2;50;50;50m";
+          }
+          if (c0 > c1) {
+              row << rankMap.at(c0) << rankMap.at(c1) << "s ";
+          } else if (c1 > c0) {
+              row << rankMap.at(c0) << rankMap.at(c1) << "o ";
+          } else {
+              row << rankMap.at(c0) << rankMap.at(c1) << "  ";
+          }
+          row << "\033[0m";
 
-      std::cout << pct_to_color(pct, mean, std);
-      std::cout << std::setfill(' ') << std::setw(2) << 100 * pct << "% ";
-      std::cout << "\033[0m";
-    }
-    std::cout << "\n";
+          row << pct_to_color(pct, mean, std);
+          row << std::setfill(' ') << std::setw(2) << 100 * pct << "% ";
+          row << "\033[0m";
+      }
+      output.push_back(row.str());
   }
-  return 0;
+  return output;
 }

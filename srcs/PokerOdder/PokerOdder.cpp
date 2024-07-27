@@ -1,5 +1,6 @@
 #include "PokerOdder.hpp"
-
+#include "HandStrength.hpp"
+#include <iostream>
 
 PokerOdder::PokerOdder()
 {
@@ -7,7 +8,7 @@ PokerOdder::PokerOdder()
     _num_players = 2;
     _cards_on_board = 5;
     _top_pct = 100;
-    _iters = 1000000;
+    _iters = 10000;
     glsl_version = "#version 130";
 }
 
@@ -67,17 +68,22 @@ void PokerOdder::run()
     }
 }
 
-void PokerOdder::show_simulation_window()
-{
-    ImGui::Begin("Hand Strength Simulation");
+void PokerOdder::show_simulation_window() {
+    static int simulation_runned = 0;
+    int display_w, display_h;
+    glfwGetFramebufferSize(_window, &display_w, &display_h);
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2((float)display_w, (float)display_h));
+    ImGui::Begin("Hand Strength Simulation", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
     ImGui::InputInt("Number of Players", &_num_players);
     ImGui::InputInt("Cards on Board", &_cards_on_board);
     ImGui::InputInt("Top % Highlighted", &_top_pct);
     ImGui::InputInt("Iterations per Hand", &_iters);
 
-    if (ImGui::Button("Run Simulation"))
-    {
+    if (ImGui::Button("Run Simulation")) {
+        simulation_runned++;
         char num_players_str[10];
         char cards_on_board_str[10];
         char top_pct_str[10];
@@ -89,7 +95,18 @@ void PokerOdder::show_simulation_window()
         snprintf(iters_str, 10, "%d", _iters);
 
         const char *argv[] = { "", num_players_str, cards_on_board_str, top_pct_str, iters_str };
-        hand_strength_sim(5, (char**)argv);
+        this->_simulation_result = HandStrength::hand_strength_sim(5, (char**)argv);
+    }
+
+    ImGui::Text("Simulation Result:");
+    ImGui::Separator();
+    if (_simulation_result.empty()) {
+        ImGui::TextWrapped("Please run the simulation to see the result.");
+    } else {
+        for (const auto& line : _simulation_result) {
+            ImGui::TextWrapped("%s", line.c_str());
+            std::cout << line << std::endl;
+        }
     }
 
     ImGui::End();

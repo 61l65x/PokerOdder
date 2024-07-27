@@ -4,7 +4,7 @@ BUILD_DIR = build
 
 CXX = c++
 FLAGS = -std=c++11 -O3
-HEADERS = -I$(PHEVAL_DIR)/include -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I./srcs/PokerOdder
+HEADERS = -I$(PHEVAL_DIR)/include -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I./srcs/PokerOdder -I./srcs/hand_strength
 LIBS = -L$(PHEVAL_DIR) -lpheval `pkg-config --cflags --libs glfw3` -lGL -ldl -lX11 -lpthread
 
 NAME = texu-helper
@@ -23,7 +23,7 @@ OBJECTS = $(SOURCES:srcs/%.cpp=$(BUILD_DIR)/srcs/%.o) \
 
 DEPS = $(OBJECTS:.o=.d)
 
-all: $(NAME)
+all: init-submodules $(NAME)
 
 $(NAME): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(FLAGS) $(HEADERS) $(LIBS) -o $(NAME)
@@ -36,25 +36,25 @@ $(BUILD_DIR)/imgui/%.o: $(IMGUI_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(FLAGS) $(HEADERS) -MMD -MP -c $< -o $@
 
-install_deps:
+install-build-deps: init-submodules
 	sudo apt-get update
 	sudo apt-get install -y build-essential libglfw3-dev \
                             libgl1-mesa-dev libx11-dev libglu1-mesa-dev \
                             libgl1-mesa-glx libglew-dev libglm-dev
-	git submodule update --init --recursive
-
-pheval_build: install_deps
 	$(MAKE) -C $(PHEVAL_DIR)
+
+init-submodules:
+	git submodule update --init --recursive
 
 fclean:
 	rm -f $(NAME)
 	rm -rf $(BUILD_DIR)
 
-deepclean: clean
+deepclean: fclean
 	$(MAKE) -C $(PHEVAL_DIR) clean
 
-re: clean all
+re: fclean all
 
 -include $(DEPS)
 
-.PHONY: re all pheval_build install_deps clean deepclean
+.PHONY: re all install_deps init_submodules clean deepclean
