@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <vector>
 #include <string>
-
+#include "WindowPages.hpp"
 
 class PokerOdder
 {
@@ -19,11 +19,12 @@ public:
     void run();
 
 private:
+    WindowPages window_pages;
     void    show_simulation_window();
 
     GLFWwindow*                 _window;
 
-    std::vector<std::string>    _simulation_result;
+    std::vector<std::pair<std::string, ImVec4>>    _simulation_result;
     int                         _num_players;
     int                         _cards_on_board;
     int                         _top_pct;

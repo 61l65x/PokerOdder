@@ -12,7 +12,8 @@ e.g.
   plays out 6 handed, just the flop, highlights the top 10% of hands, only runs 1000 simulations per hand (1M is better, but takes longer)
 
 */
-#include "HandStrength.hpp"
+
+#include "imgui.h"
 #include <cassert>
 #include <algorithm>
 #include <iomanip>
@@ -28,7 +29,7 @@ e.g.
 using namespace phevaluator;
 #define ITERS 10000
 
-std::vector<std::string> HandStrength::hand_strength_sim(int argc, char **argv)
+std::vector<std::pair<std::string, ImVec4>> hand_strength_sim(int argc, char **argv)
 {
     const std::unordered_map<int, char> rankMap = {
       {0, '2'}, {1, '3'}, {2, '4'}, {3, '5'},  {4, '6'},  {5, '7'},  {6, '8'},
@@ -165,22 +166,22 @@ std::vector<std::string> HandStrength::hand_strength_sim(int argc, char **argv)
   }
 
   auto pct_to_color = [&](float pct, float mean, float stddev) {
-    std::stringstream ss;
     auto diff = pct - mean;
     auto scaled_diff = std::abs(diff) / stddev;
     auto rb = std::max((int)(255 - scaled_diff / 1.5 * 255), 0);
     if (std::abs(diff) < 0.001) {
-      ss << "\033[38;2;255;255;255m";
+        return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
     } else if (diff < 0) {
-      ss << "\033[38;2;255;" << rb << ";" << rb << "m";
+        return ImVec4(1.0f, rb / 255.0f, rb / 255.0f, 1.0f);
     } else {
-      ss << "\033[38;2;" << rb << ";255;" << rb << "m";
+        return ImVec4(rb / 255.0f, 1.0f, rb / 255.0f, 1.0f);
     }
-    return ss.str();
-  };
+};
 
 
-  std::vector<std::string> output;
+
+  std::vector<std::pair<std::string, ImVec4>> output;
+
   // Collect header information
   std::stringstream header;
   header << std::fixed << std::setprecision(0)
@@ -188,10 +189,10 @@ std::vector<std::string> HandStrength::hand_strength_sim(int argc, char **argv)
   if (top_pct < 100) {
       header << ", highlighting top " << top_pct << "% of hands";
   }
-  output.push_back(header.str());
+  output.push_back({header.str(), ImVec4(1.0f, 1.0f, 1.0f, 1.0f)});
 
   // Simulation progress indicator
-  output.push_back("Simulation in progress...");
+  output.push_back({"Simulation in progress...", ImVec4(1.0f, 1.0f, 1.0f, 1.0f)});
 
   // Generate hand strength data
   std::unordered_map<int, float> winning_pct;
@@ -207,7 +208,7 @@ std::vector<std::string> HandStrength::hand_strength_sim(int argc, char **argv)
           int idx = h0 * 52 + h1;
           winning_pct[idx] = pct;
       }
-      output.back() += ".";
+      output.back().first += ".";
   }
 
   // Calculate mean and standard deviation
@@ -233,6 +234,7 @@ std::vector<std::string> HandStrength::hand_strength_sim(int argc, char **argv)
       return (static_cast<float>(num_above) / (13 * 13) * 100) < top_pct;
   };
 
+  ImVec4 color;
   for (auto c0 = 12; c0 >= 0; --c0) {
       std::stringstream row;
       for (auto c1 = 12; c1 >= 0; --c1) {
@@ -245,8 +247,9 @@ std::vector<std::string> HandStrength::hand_strength_sim(int argc, char **argv)
           int idx = h0 * 52 + h1;
           float pct = winning_pct.at(idx);
 
+          color = pct_to_color(pct, mean, std);
           if (!inTop(pct)) {
-              row << "\033[38;2;50;50;50m";
+              color = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
           }
           if (c0 > c1) {
               row << rankMap.at(c0) << rankMap.at(c1) << "s ";
@@ -255,13 +258,11 @@ std::vector<std::string> HandStrength::hand_strength_sim(int argc, char **argv)
           } else {
               row << rankMap.at(c0) << rankMap.at(c1) << "  ";
           }
-          row << "\033[0m";
 
-          row << pct_to_color(pct, mean, std);
           row << std::setfill(' ') << std::setw(2) << 100 * pct << "% ";
-          row << "\033[0m";
       }
-      output.push_back(row.str());
+      output.push_back({row.str(), color});
   }
+
   return output;
 }
