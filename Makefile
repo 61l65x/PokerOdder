@@ -4,7 +4,8 @@ BUILD_DIR = build
 
 CXX = c++
 FLAGS = -std=c++11 -O3
-HEADERS = -I$(PHEVAL_DIR)/include -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I./srcs/PokerOdder -I./srcs/hand_strength
+SRC_DIRS = $(shell find srcs -type d)
+HEADERS = $(foreach dir,$(SRC_DIRS),-I$(dir)) -I$(PHEVAL_DIR)/include -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
 LIBS = -L$(PHEVAL_DIR) -lpheval `pkg-config --cflags --libs glfw3` -lGL -ldl -lX11 -lpthread
 
 NAME = texu-helper
@@ -57,4 +58,4 @@ re: fclean all
 
 -include $(DEPS)
 
-.PHONY: re all install_deps init_submodules clean deepclean
+.PHONY: re all install-deps init-submodules clean deepclean
